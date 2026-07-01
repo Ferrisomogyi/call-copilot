@@ -115,8 +115,14 @@
       <label>App-token (indien ingesteld in de Worker)</label>
       <input id="appToken" type="password" placeholder="zelfde geheim als APP_TOKEN">
       <label>Model</label>
-      <input id="model" type="text" value="claude-sonnet-4-6">
-      <div class="hint">Vul de Worker URL in, dan gaat alles via Cloudflare en staat je API-key nergens in de browser. Instellingen blijven op dit apparaat bewaard.</div>
+      <select id="model">
+        <option value="claude-sonnet-5" selected>Claude Sonnet 5 (snel + slim, aanrader live)</option>
+        <option value="claude-haiku-4-5">Claude Haiku 4.5 (snelst, goedkoopst)</option>
+        <option value="claude-opus-4-8">Claude Opus 4.8 (slimst, iets trager)</option>
+        <option value="claude-sonnet-4-6">Claude Sonnet 4.6 (vorige)</option>
+        <option value="claude-fable-5">Claude Fable 5 (traag + duur, kan weigeren)</option>
+      </select>
+      <div class="hint">Sonnet 5 is de beste balans voor live gebruik: snel, goedkoop, bijna Opus-niveau. Fable 5 denkt seconden na (altijd-aan reasoning) en is 5x duurder op output, dus alleen voor zware taken, niet voor live gesprekken. Vul de Worker URL in, dan gaat alles via Cloudflare en staat je API-key nergens in de browser. Instellingen blijven op dit apparaat bewaard.</div>
     </details>
   </aside>
 
@@ -224,7 +230,7 @@ async function generate(){
   const headers={'content-type':'application/json'};
   const tok=$('appToken').value.trim(); if(tok) headers['x-app-token']=tok;
   const payload={
-    model:$('model').value.trim()||'claude-sonnet-4-6',
+    model:$('model').value.trim()||'claude-sonnet-5',
     max_tokens:1000, stream:true, system:buildSystem(),
     messages:[{role:'user',content:`Dit zei de ander zojuist:\n"""${recent}"""\n\nWat antwoord ik?`}]
   };
