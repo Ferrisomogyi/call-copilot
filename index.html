@@ -171,12 +171,13 @@ const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 function buildRec(){
   if(!SR){ showErr('Web Speech API niet beschikbaar. Gebruik Chrome, en draai via https (GitHub Pages) of lokaal.'); return null; }
   const r = new SR();
-  r.continuous = true; r.interimResults = true; r.lang = $('lang').value;
+  const MOBIEL = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+  r.continuous = !MOBIEL; r.interimResults = true; r.lang = $('lang').value;
   r.onresult = e => {
-    let fin="", interim="";
+    let fin="", interim="", vorige=null;
     for(let i=0;i<e.results.length;i++){
-      const t=e.results[i][0].transcript;
-      if(e.results[i].isFinal) fin += t+" ";
+      const t=e.results[i][0].transcript.trim();
+      if(e.results[i].isFinal){ if(t && t!==vorige) fin += t+" "; vorige=t; }
       else interim += t;
     }
     const nieuw = sessionBase + fin;
