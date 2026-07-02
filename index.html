@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Call Copilot</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b0f14">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <style>
   :root{
     --bg:#0b0f14; --panel:#121821; --panel2:#0e141c; --line:#1f2a37;
@@ -150,7 +154,7 @@
 <script>
 const $ = id => document.getElementById(id);
 const dot=$('dot'), statusEl=$('status'), errEl=$('err');
-let recognizing=false, rec=null, transcriptFinal="", lastGenAt=0, autoTimer=null;
+let recognizing=false, rec=null, transcriptFinal="", sessionBase="", lastGenAt=0, autoTimer=null;
 
 // ---- instellingen bewaren op dit apparaat ----
 const SAVE=['topic','stance','who','context','tone','lang','len','workerUrl','appToken','model'];
@@ -169,12 +173,14 @@ function buildRec(){
   const r = new SR();
   r.continuous = true; r.interimResults = true; r.lang = $('lang').value;
   r.onresult = e => {
-    let interim="";
-    for(let i=e.resultIndex;i<e.results.length;i++){
+    let fin="", interim="";
+    for(let i=0;i<e.results.length;i++){
       const t=e.results[i][0].transcript;
-      if(e.results[i].isFinal){ transcriptFinal += t+" "; scheduleAuto(); }
+      if(e.results[i].isFinal) fin += t+" ";
       else interim += t;
     }
+    const nieuw = sessionBase + fin;
+    if(nieuw !== transcriptFinal){ transcriptFinal = nieuw; scheduleAuto(); }
     renderTranscript(interim);
   };
   r.onerror = e => {
@@ -183,7 +189,7 @@ function buildRec(){
       stopListening();
     } else if(e.error==='no-speech'){ } else showErr('Speech-fout: '+e.error);
   };
-  r.onend = () => { if(recognizing){ try{r.start();}catch(_){} } };
+  r.onend = () => { if(recognizing){ sessionBase = transcriptFinal; try{r.start();}catch(_){} } };
   return r;
 }
 function renderTranscript(interim){
@@ -196,6 +202,7 @@ function escapeHtml(s){return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt
 
 function startListening(){
   showErr(''); rec=buildRec(); if(!rec) return;
+  sessionBase = transcriptFinal;
   try{ rec.start(); }catch(_){}
   recognizing=true; setStatus('Luistert...','live'); $('startBtn').textContent='⏹ Stop';
 }
@@ -220,7 +227,7 @@ MIJN STANDPUNT/DOEL: ${$('stance').value||'(niet opgegeven)'}
 DE ANDER/CONTEXT: ${$('who').value||'(niet opgegeven)'}
 ACHTERGRONDKENNIS (gebruik dit actief als feitenbasis, verzin niets daarbuiten): ${$('context').value||'(geen)'}
 TOON: ${$('tone').value}
-Geef mij ${$('len').value}. Schrijf in de ik-vorm alsof ik het zeg. Kort, direct, meteen bruikbaar. Geen inleiding, geen uitleg, geen disclaimers. Antwoord in het ${$('lang').value.startsWith('nl')?'Nederlands':'Engels'}.`;
+Geef mij ${$('len').value}. Schrijf in de ik-vorm alsof ik het zeg. Kort, direct, meteen bruikbaar. Geen inleiding, geen uitleg, geen disclaimers, geen gedachtestreepjes. Antwoord in het ${$('lang').value.startsWith('nl')?'Nederlands':'Engels'}.`;
 }
 
 async function generate(){
@@ -279,11 +286,12 @@ $('genBtn').onclick=generate;
 
 // ---------- UI ----------
 $('cfgBtn').onclick=()=> $('side').classList.toggle('collapsed');
-$('clearBtn').onclick=()=>{ transcriptFinal=""; renderTranscript(''); };
+$('clearBtn').onclick=()=>{ transcriptFinal=""; sessionBase=""; renderTranscript(''); };
 $('lang').onchange=()=>{ if(rec) rec.lang=$('lang').value; };
 document.addEventListener('keydown',e=>{
   if(e.code==='Space' && !['TEXTAREA','INPUT','SELECT'].includes(e.target.tagName)){ e.preventDefault(); generate(); }
 });
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
 </script>
 </body>
 </html>
